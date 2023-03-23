@@ -1,0 +1,39 @@
+// @CopyRight 2022-2023 Negoita Anca-Elena, 321CA
+
+Building an ELF loader
+-------------------------------------------------------------------------------
+
+This project consisted in building an ELF loader, a dynamic library that can be
+used to run ELF binaries. In order to do so, the signal SIGSEGV needs to be
+analysed and solve the Segmentation Fault that appears in it, to be more
+precised, in a page. 
+
+The exec structure, the file descriptor specific to the file executable and a 
+sigaction type structure are preserved as static global variables. In the 
+handler, the address to which it was received the seg_fault signal is checked
+and if the address is not found in the segment vector, the default handler 
+starts running. It is determined, based on the segment index, on which page is
+the address. The data field in the exec structure was used to remember if a
+page is mapped or not. The value 0 indicates that the page has not been mapped,
+and 1 as it was. If data wasn't allocated before, then using calloc it will
+receive memory and if a page is already mapped then the default handler is
+called. Then the whole portion until the page fault and also with it included
+is mapped and it is determined if a part of the page should have 0 in it. (If
+it goes beyond the file size, between file size and the actual memory size the
+whole remaining page will have 0 in it by using memset). Also, by using mmap,
+the permisions are already set from the segment structure, and the file
+descriptor is represented by a global variable created in so_exec using
+the function open() and the given path.
+
+There are 5 cases:
+- If the whole page is in the file size, then nothing happens.
+- If the beginning of the page is in the file size and the end is between file
+size and memory size, then the portion between the file size and memory size
+will have 0 in it.
+- If the beginning and the end of the page are in memory size and not in file
+size at all, then the whole page will have 0 in it.
+- If the beginning is in the memory size and the end goes beyond it, what goes
+after is ignored and the remaining page will have 0 in it.
+- If the beginning is in the file size and the end goes beyong memory size,
+then like, the second case, what is between file size and memory size will have
+0 in it. (in this case, the whole portion will be 0)
